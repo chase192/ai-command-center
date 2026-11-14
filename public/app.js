@@ -25,8 +25,10 @@ document.querySelector('#askForm').addEventListener('submit', async event => {
   button.disabled = true; status.textContent = 'Consulting models…';
   document.querySelector('#combined').textContent = 'Working…';
   document.querySelector('#answers').replaceChildren();
+  document.querySelector('#reviews').replaceChildren();
+  document.querySelector('#reviewsSection').hidden = true;
   try {
-    const data = await api('/api/ask', { method: 'POST', body: JSON.stringify({ prompt: document.querySelector('#prompt').value }) });
+    const data = await api('/api/ask', { method: 'POST', body: JSON.stringify({ prompt: document.querySelector('#prompt').value, mode: document.querySelector('#mode').value }) });
     document.querySelector('#combined').textContent = data.combined;
     for (const [name, result] of Object.entries(data.answers)) {
       const section = document.createElement('section'); section.className = 'answer';
@@ -34,7 +36,16 @@ document.querySelector('#askForm').addEventListener('submit', async event => {
       const body = document.createElement('pre'); body.textContent = result.text || result.error;
       section.append(heading, body); document.querySelector('#answers').append(section);
     }
-    status.textContent = 'Complete';
+    if (data.reviews) {
+      document.querySelector('#reviewsSection').hidden = false;
+      for (const [name, review] of Object.entries(data.reviews)) {
+        const section = document.createElement('section'); section.className = 'answer';
+        const heading = document.createElement('h3'); heading.textContent = name;
+        const body = document.createElement('pre'); body.textContent = review.text || review.error || review.skipped || 'No review returned';
+        section.append(heading, body); document.querySelector('#reviews').append(section);
+      }
+    }
+    status.textContent = 'Complete (' + (data.mode || 'fast') + ' mode)';
   } catch (error) { document.querySelector('#combined').textContent = ''; status.textContent = error.message; }
   finally { button.disabled = false; }
 });
