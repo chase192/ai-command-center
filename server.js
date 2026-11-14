@@ -4,6 +4,7 @@ import express from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
+import { mountMcp } from './mcp.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -245,17 +246,9 @@ async function grok(prompt) {
   return data.choices?.[0]?.message?.content || 'No text returned';
 }
 
-app.post('/api/ask', requireAuth, async (req, res) => {
+async function askModels(prompt) {
   if (!sameOrigin(req)) {
     return res.status(403).json({ error: 'Invalid origin' });
-  }
-
-  const prompt = req.body?.prompt;
-  if (typeof prompt !== 'string' ||
-      !prompt.trim() || prompt.length > 5000) {
-    return res.status(400).json({
-      error: 'Prompt must be 1-5000 characters'
-    });
   }
 
   const names = ['OpenAI', 'Claude', 'Grok'];
@@ -274,10 +267,7 @@ app.post('/api/ask', requireAuth, async (req, res) => {
     .filter(([, value]) => value.text);
 
   if (!successful.length) {
-    return res.status(502).json({
-      error: 'All providers failed',
-      answers
-    });
+    return { error: 'All providers failed', answers };
   }
 
   let combined;
@@ -298,8 +288,18 @@ app.post('/api/ask', requireAuth, async (req, res) => {
       'Review the individual model responses below.';
   }
 
-  res.json({ combined, answers });
+  return { combined, answers };
+}
+
+app.post('/api/ask', requireAuth, async (req, res) => {
+  if (!sameOrigin(req)) return res.status(403).json({ error: 'Invalid origin' });
+  const prompt = req.body?.prompt;
+  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 5000) return res.status(400).json({ error: 'Prompt must be 1-5000 characters' });
+  const result = await askModels(prompt);
+  res.status(result.error ? 502 : 200).json(result);
 });
+
+mountMcp(app, askModels);
 
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
   console.log('AI Command Center started');
