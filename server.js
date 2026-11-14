@@ -282,9 +282,9 @@ async function askModels(prompt, mode = 'fast') {
     mode = 'deep';
     prompt = prompt.replace(/^\s*\[DEEP\]\s*/i, '').trim();
   }
-  const researchCommand = /^\\s*\\[RESEARCH\\]\\s*/i.test(prompt);
+  const researchCommand = /^\s*\[RESEARCH\]\s*/i.test(prompt);
   if (researchCommand) {
-    prompt = prompt.replace(/^\\s*\\[RESEARCH\\]\\s*/i, '').trim();
+    prompt = prompt.replace(/^\s*\[RESEARCH\]\s*/i, '').trim();
   }
   const research = researchCommand || mode === 'research' || mode === 'research-deep';
   if (mode === 'research-deep') mode = 'deep';
@@ -300,7 +300,7 @@ async function askModels(prompt, mode = 'fast') {
     'Cite supporting URLs for factual claims. Do not claim that snippets verify an entire page.',
     'Distinguish sourced claims, reasonable inferences, and unverified assertions.',
     'Question:', prompt, 'Search results:', JSON.stringify(sources)
-  ].join('\\n\\n') : prompt;
+  ].join('\n\n') : prompt;
   const providers = { OpenAI: openai, Claude: claude, Grok: grok };
   const names = Object.keys(providers);
   const started = Date.now();
