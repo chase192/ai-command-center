@@ -9,7 +9,7 @@ const JWKS_URL = ISSUER ? new URL('.well-known/jwks.json', ISSUER).toString() : 
 let keyCache = { expires: 0, keys: [] };
 
 function unauthorized(res, message = 'Unauthorized') {
-  res.set('WWW-Authenticate', `Bearer resource_metadata="${MCP_URL}/.well-known/oauth-protected-resource", error="invalid_token"`);
+  res.set('WWW-Authenticate', `Bearer resource_metadata="${MCP_ORIGIN}/.well-known/oauth-protected-resource/mcp", error="invalid_token"`);
   return res.status(401).json({ error: message });
 }
 function decode(part) {
