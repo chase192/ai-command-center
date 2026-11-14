@@ -66,10 +66,10 @@ function rpc(id, result) { return { jsonrpc: '2.0', id, result }; }
 function rpcError(id, code, message) { return { jsonrpc: '2.0', id, error: { code, message } }; }
 const tool = {
   name: 'ask_ai_command_center',
-  description: 'Ask OpenAI, Claude and Grok and synthesize their answers. Choose fast for one-round answers or deep for peer review by all models followed by a final synthesis. Deep mode uses additional paid API credits.',
+  description: 'Ask OpenAI, Claude and Grok and synthesize their answers. Choose fast for one-round answers or deep for peer review by all models followed by a final synthesis. Deep mode uses additional paid API credits. For clients that only expose prompt, prefix the prompt with [DEEP] to request deep mode.',
   inputSchema: {
     type: 'object',
-    properties: { prompt: { type: 'string', minLength: 1, maxLength: 5000 }, mode: { type: 'string', enum: ['fast', 'deep'], description: 'fast (default) or deep collaboration with peer review' } },
+    properties: { prompt: { type: 'string', minLength: 1, maxLength: 5000 }, mode: { type: 'string', enum: ['fast', 'deep'], description: 'fast (default) or deep collaboration with peer review; cached clients may use [DEEP] prompt prefix' } },
     required: ['prompt'],
     additionalProperties: false
   }
