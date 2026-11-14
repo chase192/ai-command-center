@@ -258,7 +258,10 @@ async function askModels(prompt, mode = 'fast') {
   const deep = mode === 'deep';
   const providers = { OpenAI: openai, Claude: claude, Grok: grok };
   const names = Object.keys(providers);
+  const started = Date.now();
+  console.info('[Deep] Start', { mode: deep ? 'deep' : 'fast' });
   const initial = await Promise.allSettled(names.map(name => providers[name](prompt)));
+  console.info('[Deep] Initial round complete', { elapsedMs: Date.now() - started, successful: initial.filter(x => x.status === 'fulfilled').length });
   const answers = Object.fromEntries(initial.map((result, i) => [
     names[i], result.status === 'fulfilled'
       ? { text: result.value }
@@ -285,6 +288,7 @@ async function askModels(prompt, mode = 'fast') {
       ].join('\n\n');
       return providers[name](reviewPrompt);
     }));
+    console.info('[Deep] Peer review complete', { elapsedMs: Date.now() - started, successful: reviewResults.filter(x => x.status === 'fulfilled' && x.value !== null).length });
     reviews = Object.fromEntries(reviewResults.map((result, i) => [
       names[i], result.status === 'fulfilled'
         ? (result.value === null ? { skipped: 'No other successful model to review' } : { text: result.value })
@@ -307,6 +311,7 @@ async function askModels(prompt, mode = 'fast') {
   } catch {
     combined = 'Automatic synthesis unavailable. Review the individual model responses below.';
   }
+  console.info('[Deep] Synthesis complete', { elapsedMs: Date.now() - started });
   return { mode: deep ? 'deep' : 'fast', combined, answers, ...(deep ? { reviews } : {}) };
 }
 
