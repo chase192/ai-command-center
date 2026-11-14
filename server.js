@@ -8,6 +8,8 @@ import { registerMcp } from './mcp.js';
 
 const app = express();
 app.disable('x-powered-by');
+// Render terminates TLS at one trusted reverse proxy. Required for accurate rate limiting.
+app.set('trust proxy', 1);
 
 app.use(helmet({
   contentSecurityPolicy: {
