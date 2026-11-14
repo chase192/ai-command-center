@@ -66,10 +66,10 @@ function rpc(id, result) { return { jsonrpc: '2.0', id, result }; }
 function rpcError(id, code, message) { return { jsonrpc: '2.0', id, error: { code, message } }; }
 const tool = {
   name: 'ask_ai_command_center',
-  description: 'Ask OpenAI, Claude and Grok and synthesize their answers. Choose fast for one-round answers or deep for peer review by all models followed by a final synthesis. Deep mode uses additional paid API credits. For clients that only expose prompt, prefix the prompt with [DEEP] to request deep mode.',
+  description: 'Ask OpenAI, Claude and Grok and synthesize their answers. Choose fast for one-round answers or deep for peer review by all models followed by a final synthesis. Deep mode uses additional paid API credits. For clients that only expose prompt, prefix with [DEEP] for deep mode or [RESEARCH] for paid sourced web research; combine [DEEP] [RESEARCH] for both.',
   inputSchema: {
     type: 'object',
-    properties: { prompt: { type: 'string', minLength: 1, maxLength: 5000 }, mode: { type: 'string', enum: ['fast', 'deep'], description: 'fast (default) or deep collaboration with peer review; cached clients may use [DEEP] prompt prefix' } },
+    properties: { prompt: { type: 'string', minLength: 1, maxLength: 5000 }, mode: { type: 'string', enum: ['fast', 'deep', 'research', 'research-deep'], description: 'fast (default) or deep collaboration with peer review; cached clients may use [DEEP] prompt prefix' } },
     required: ['prompt'],
     additionalProperties: false
   }
@@ -115,7 +115,7 @@ export function registerMcp(app, askModels) {
     if (request.method === 'tools/call') {
       if (!req.mcpScopes.has('mcp:execute')) return res.status(403).json(rpcError(id, -32003, 'Missing mcp:execute scope'));
       const args = request.params?.arguments;
-      if (request.params?.name !== tool.name || !args || typeof args.prompt !== 'string' || !args.prompt.trim() || args.prompt.length > 5000 || (args.mode !== undefined && !['fast', 'deep'].includes(args.mode))) {
+      if (request.params?.name !== tool.name || !args || typeof args.prompt !== 'string' || !args.prompt.trim() || args.prompt.length > 5000 || (args.mode !== undefined && !['fast', 'deep', 'research', 'research-deep'].includes(args.mode))) {
         return res.json(rpcError(id, -32602, 'Invalid tool arguments'));
       }
       try {
