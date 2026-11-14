@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 
-const MCP_URL = 'https://chase-ai-command-center.onrender.com/mcp';
+const MCP_URL = (process.env.MCP_RESOURCE_URL || 'https://chase-ai-command-center.onrender.com/mcp').replace(/\/$/, '');
+const MCP_ORIGIN = new URL(MCP_URL).origin;
 const DOMAIN = (process.env.AUTH0_DOMAIN || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
 const ISSUER = DOMAIN ? `https://${DOMAIN}/` : '';
 const AUDIENCE = process.env.AUTH0_AUDIENCE || MCP_URL;
