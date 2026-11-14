@@ -81,6 +81,10 @@ export function registerMcp(app, askModels) {
     scopes_supported: ['mcp:read', 'mcp:execute'],
     bearer_methods_supported: ['header']
   };
+  app.use(['/mcp', '/.well-known/oauth-protected-resource', '/.well-known/oauth-protected-resource/mcp'], (req, _res, next) => {
+    console.info('[MCP] Incoming request', { method: req.method, path: req.path, hasBearer: /^Bearer /i.test(req.get('authorization') || ''), contentType: req.get('content-type') || 'none' });
+    next();
+  });
   app.get('/.well-known/oauth-protected-resource', (_req, res) => res.json(metadata));
   app.get('/.well-known/oauth-protected-resource/mcp', (_req, res) => res.json(metadata));
   app.get('/mcp', verifyToken, (_req, res) => res.status(405).set('Allow', 'POST').end());
