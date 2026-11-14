@@ -37,7 +37,7 @@ export function mountMcp(app, askModels) {
     if (!authorization.startsWith('Bearer ')) return challenge(res);
     try {
       const { payload } = await jwtVerify(authorization.slice(7), jwks, {
-        issuer: issuer + '/',
+        issuer,
         audience,
         algorithms: ['RS256']
       });
@@ -50,6 +50,7 @@ export function mountMcp(app, askModels) {
     const server = new McpServer({ name: 'AI Command Center', version: '1.0.0' });
     server.registerTool('ask_all_models', {
       description: 'Ask OpenAI, Claude and Grok the same question, then synthesize their responses. Sends the question to all three external AI providers and incurs API usage charges.',
+      securitySchemes: [{ type: 'oauth2', scopes: ['ask:models'] }],
       inputSchema: { question: z.string().min(1).max(5000) }
     }, async ({ question }) => {
       const result = await askModels(question);
