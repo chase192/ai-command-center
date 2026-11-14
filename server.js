@@ -298,6 +298,7 @@ app.post('/api/ask', requireAuth, async (req, res) => {
   res.json(result);
 });
 
+app.use('/mcp', rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false }));
 registerMcp(app, askModels);
 
 app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
