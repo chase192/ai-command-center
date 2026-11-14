@@ -35,9 +35,9 @@ async function publicKey(kid) {
   return crypto.createPublicKey({ key: jwk, format: 'jwk' });
 }
 async function verifyToken(req, res, next) {
-  if (!ISSUER) return res.status(503).json({ error: 'MCP authentication not configured' });
+  if (!ISSUER) { console.warn('[MCP] Auth0 issuer not configured'); return res.status(503).json({ error: 'MCP authentication not configured' }); }
   const match = /^Bearer (\S+)$/i.exec(req.get('authorization') || '');
-  if (!match) return unauthorized(res);
+  if (!match) { console.warn('[MCP] Missing bearer token'); return unauthorized(res); }
   try {
     const parts = match[1].split('.');
     if (parts.length !== 3) throw new Error('Malformed token');
@@ -53,8 +53,10 @@ async function verifyToken(req, res, next) {
       (claims.iat !== undefined && (!Number.isInteger(claims.iat) || claims.iat > now + 60)) ||
       typeof claims.sub !== 'string') throw new Error('Invalid claims');
     req.mcpScopes = new Set((claims.scope || '').split(/\s+/).filter(Boolean));
+    console.info('[MCP] Token verified', { scopeRead: req.mcpScopes.has('mcp:read'), scopeExecute: req.mcpScopes.has('mcp:execute') });
     next();
-  } catch {
+  } catch (error) {
+    console.warn('[MCP] Token rejected', { reason: error.message });
     return unauthorized(res);
   }
 }
@@ -85,6 +87,7 @@ export function registerMcp(app, askModels) {
   app.delete('/mcp', verifyToken, (_req, res) => res.status(405).set('Allow', 'POST').end());
   app.post('/mcp', verifyToken, async (req, res) => {
     const request = req.body;
+    console.info('[MCP] RPC request', { method: typeof request?.method === 'string' ? request.method : 'invalid', protocol: req.get('mcp-protocol-version') || 'unspecified' });
     if (!request || typeof request !== 'object' || Array.isArray(request) || request.jsonrpc !== '2.0' || typeof request.method !== 'string') {
       return res.status(400).json(rpcError(null, -32600, 'Invalid Request'));
     }
@@ -99,7 +102,8 @@ export function registerMcp(app, askModels) {
     }));
     if (request.method === 'ping') return res.json(rpc(id, {}));
     if (request.method === 'tools/list') {
-      if (!req.mcpScopes.has('mcp:read')) return res.status(403).json(rpcError(id, -32003, 'Missing mcp:read scope'));
+      if (!req.mcpScopes.has('mcp:read')) { console.warn('[MCP] tools/list denied: missing mcp:read'); return res.status(403).json(rpcError(id, -32003, 'Missing mcp:read scope')); }
+      console.info('[MCP] tools/list returned ask_ai_command_center');
       return res.json(rpc(id, { tools: [tool] }));
     }
     if (request.method === 'tools/call') {
