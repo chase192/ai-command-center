@@ -26,10 +26,21 @@ document.querySelector('#askForm').addEventListener('submit', async event => {
   document.querySelector('#combined').textContent = 'Working…';
   document.querySelector('#answers').replaceChildren();
   document.querySelector('#reviews').replaceChildren();
+  document.querySelector('#sources').replaceChildren();
+  document.querySelector('#sourcesSection').hidden = true;
   document.querySelector('#reviewsSection').hidden = true;
   try {
     const data = await api('/api/ask', { method: 'POST', body: JSON.stringify({ prompt: document.querySelector('#prompt').value, mode: document.querySelector('#mode').value }) });
     document.querySelector('#combined').textContent = data.combined;
+    if (data.sources?.length) {
+      document.querySelector('#sourcesSection').hidden = false;
+      for (const source of data.sources) {
+        const p = document.createElement('p');
+        const a = document.createElement('a'); a.href = source.url; a.textContent = source.title || source.url;
+        a.target = '_blank'; a.rel = 'noopener noreferrer';
+        p.append(a); document.querySelector('#sources').append(p);
+      }
+    }
     for (const [name, result] of Object.entries(data.answers)) {
       const section = document.createElement('section'); section.className = 'answer';
       const heading = document.createElement('h3'); heading.textContent = name;
