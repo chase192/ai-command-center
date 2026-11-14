@@ -47,11 +47,13 @@ async function verifyToken(req, res, next) {
     const key = await publicKey(header.kid);
     const valid = crypto.verify('RSA-SHA256', Buffer.from(parts[0] + '.' + parts[1]), key, Buffer.from(parts[2], 'base64url'));
     const now = Math.floor(Date.now() / 1000);
-    if (!valid || claims.iss !== ISSUER || !(typeof claims.aud === 'string' ? claims.aud === AUDIENCE : Array.isArray(claims.aud) && claims.aud.includes(AUDIENCE)) ||
-      !Number.isInteger(claims.exp) || claims.exp <= now ||
-      (claims.nbf !== undefined && (!Number.isInteger(claims.nbf) || claims.nbf > now)) ||
-      (claims.iat !== undefined && (!Number.isInteger(claims.iat) || claims.iat > now + 60)) ||
-      typeof claims.sub !== 'string') throw new Error('Invalid claims');
+    if (!valid) throw new Error('Invalid signature');
+    if (claims.iss !== ISSUER) throw new Error('Issuer mismatch');
+    if (!(typeof claims.aud === 'string' ? claims.aud === AUDIENCE : Array.isArray(claims.aud) && claims.aud.includes(AUDIENCE))) throw new Error('Audience mismatch');
+    if (!Number.isInteger(claims.exp) || claims.exp <= now) throw new Error('Token expired or missing expiry');
+    if (claims.nbf !== undefined && (!Number.isInteger(claims.nbf) || claims.nbf > now)) throw new Error('Token not yet valid');
+    if (claims.iat !== undefined && (!Number.isInteger(claims.iat) || claims.iat > now + 60)) throw new Error('Invalid issue time');
+    if (typeof claims.sub !== 'string') throw new Error('Missing subject');
     req.mcpScopes = new Set((claims.scope || '').split(/\s+/).filter(Boolean));
     console.info('[MCP] Token verified', { scopeRead: req.mcpScopes.has('mcp:read'), scopeExecute: req.mcpScopes.has('mcp:execute') });
     next();
