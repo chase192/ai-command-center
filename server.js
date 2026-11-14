@@ -249,6 +249,12 @@ async function grok(prompt) {
 }
 
 async function askModels(prompt, mode = 'fast') {
+  // Backward-compatible command for ChatGPT clients with cached prompt-only schemas.
+  const deepCommand = /^\s*\[DEEP\]\s*/i.test(prompt);
+  if (deepCommand) {
+    mode = 'deep';
+    prompt = prompt.replace(/^\s*\[DEEP\]\s*/i, '').trim();
+  }
   const deep = mode === 'deep';
   const providers = { OpenAI: openai, Claude: claude, Grok: grok };
   const names = Object.keys(providers);
